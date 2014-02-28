@@ -23,6 +23,7 @@ using MonoTouch.CoreGraphics;
 using MonoTouch.Foundation;
 using MonoTouch.UIKit;
 using Xamarin.Auth;
+using Xamarin.Controls;
 using Xamarin.Utilities.iOS;
 
 namespace Xamarin.Social
@@ -58,9 +59,6 @@ namespace Xamarin.Social
 			Title = NSBundle.MainBundle.LocalizedString (service.ShareTitle, "Title of Share dialog");
 			
 			View.BackgroundColor = UIColor.White;
-
-			if (UIDevice.CurrentDevice.CheckSystemVersion (7, 0))
-				EdgesForExtendedLayout = UIRectEdge.None;
 
 			futureAccounts = service.GetAccountsAsync ();
 		}

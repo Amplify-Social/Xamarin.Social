@@ -52,6 +52,12 @@
     <Compile Include="..\Xamarin.Social\Service.cs">
       <Link>Service.cs</Link>
     </Compile>
+    <Compile Include="..\Xamarin.Social\ISupportScope.cs">
+      <Link>ISupportScope.cs</Link>
+    </Compile>
+    <Compile Include="..\Xamarin.Social\Services\DisqusService.cs">
+      <Link>Services\DisqusService.cs</Link>
+    </Compile>
     <Compile Include="..\Xamarin.Social\ShareResult.cs">
       <Link>ShareResult.cs</Link>
     </Compile>
@@ -82,12 +88,14 @@
     <Compile Include="..\Xamarin.Social\OAuth2Service.cs">
       <Link>OAuth2Service.cs</Link>
     </Compile>
-    <Compile Include="ProgressLabel.cs" />
     <Compile Include="ShareViewController.cs" />
     <Compile Include="..\Xamarin.Social\Services\AppDotNetService.cs">
       <Link>Services\AppDotNetService.cs</Link>
     </Compile>
     <Compile Include="Services\Twitter5Service.cs" />
+    <Compile Include="..\..\Xamarin.Auth\src\Xamarin.Auth.iOS\ProgressLabel.cs">
+      <Link>ProgressLabel.cs</Link>
+    </Compile>
     <Compile Include="..\..\Xamarin.Auth\src\Xamarin.Auth.iOS\UIViewControllerEx.cs">
       <Link>UIViewControllerEx.cs</Link>
     </Compile>
@@ -97,10 +105,36 @@
     <Compile Include="..\..\Xamarin.Auth\src\Xamarin.Auth\WebEx.cs">
       <Link>WebEx.cs</Link>
     </Compile>
+    <Compile Include="Services\SocialService.cs" />
+    <Compile Include="Services\Twitter6Service.cs" />
+    <Compile Include="Services\Facebook6Service.cs" />
+    <Compile Include="..\Xamarin.Social\Services\GoogleService.cs">
+      <Link>Services\GoogleService.cs</Link>
+    </Compile>
+    <Compile Include="..\Xamarin.Social\IOSService.cs">
+      <Link>IOSService.cs</Link>
+    </Compile>
+    <Compile Include="..\Xamarin.Social\Services\DropboxService.cs">
+      <Link>Services\DropboxService.cs</Link>
+    </Compile>
+    <Compile Include="..\Xamarin.Social\OAuth1PreAService.cs">
+      <Link>OAuth1PreAService.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Services\" />
   </ItemGroup>
+  <ProjectExtensions>
+    <MonoDevelop>
+      <Properties>
+        <Policies>
+          <TextStylePolicy inheritsSet="Mono" inheritsScope="text/plain" scope="text/plain" />
+          <TextStylePolicy inheritsSet="Mono" inheritsScope="text/plain" scope="text/x-csharp" />
+          <CSharpFormattingPolicy inheritsSet="Mono" inheritsScope="text/x-csharp" scope="text/x-csharp" />
+        </Policies>
+      </Properties>
+    </MonoDevelop>
+  </ProjectExtensions>
   <ItemGroup>
     <ProjectReference Include="..\..\Xamarin.Auth\src\Xamarin.Auth.iOS\Xamarin.Auth.iOS.csproj">
       <Project>{9309BCCC-AA7B-4195-A130-D4572FA9488D}</Project>

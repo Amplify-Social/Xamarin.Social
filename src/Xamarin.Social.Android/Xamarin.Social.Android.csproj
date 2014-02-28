@@ -32,7 +32,6 @@
     <WarningLevel>4</WarningLevel>
     <ConsolePause>False</ConsolePause>
     <AndroidUseSharedRuntime>False</AndroidUseSharedRuntime>
-    <AndroidLinkMode>SdkOnly</AndroidLinkMode>
     <DefineConstants>PLATFORM_ANDROID</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
@@ -93,6 +92,9 @@
     </Compile>
     <Compile Include="..\..\Xamarin.Auth\src\Xamarin.Auth\WebEx.cs">
       <Link>WebEx.cs</Link>
+    </Compile>
+    <Compile Include="..\Xamarin.Social\ISupportScope.cs">
+      <Link>ISupportScope.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>

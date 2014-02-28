@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Net;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Threading;
@@ -17,7 +18,6 @@ namespace Xamarin.Social.Services
 		public Twitter5Service ()
 		{
 		}
-
 
 		#region Share
 
@@ -155,17 +155,18 @@ namespace Xamarin.Social.Services
 
 		public override Task<IEnumerable<Account>> GetAccountsAsync ()
 		{
-			if (accountStore == null)
+			if (accountStore == null) {
 				accountStore = new ACAccountStore ();
-
-			var at = accountStore.FindAccountType (ACAccountType.Twitter);
+			}
+			var store = new ACAccountStore ();
+			var at = store.FindAccountType (ACAccountType.Twitter);
 
 			var tcs = new TaskCompletionSource<IEnumerable<Account>> ();
 
-			accountStore.RequestAccess (at, (granted, error) => {
+			store.RequestAccess (at, (granted, error) => {
 				if (granted) {
-					var accounts = accountStore.FindAccounts (at)
-						.Select (a => (Account) new ACAccountWrapper (a, accountStore))
+					var accounts = store.FindAccounts (at)
+						.Select (a => (Account) new ACAccountWrapper (a, store))
 						.ToList ();
 
 					tcs.SetResult (accounts);
@@ -199,6 +200,12 @@ namespace Xamarin.Social.Services
 			}
 		}
 
+		public override bool SupportsDelete {
+			get {
+				return false;
+			}
+		}
+
 		public override void SaveAccount (Account account)
 		{
 			throw new NotSupportedException ("Twitter5Service does support saving user accounts. You should direct them to the Settings application.");
@@ -210,6 +217,24 @@ namespace Xamarin.Social.Services
 		}
 
 		#endregion
+
+		
+		public override bool SupportsVerification {
+			get {
+				return true;
+			}
+		}
+
+		public override Task VerifyAsync (Account account, CancellationToken token)
+		{
+			return CreateRequest ("GET",
+				new Uri ("https://api.twitter.com/1.1/account/verify_credentials.json"),
+				account
+			).GetResponseAsync (token).ContinueWith (t => {
+				if (t.Result.StatusCode != HttpStatusCode.OK)
+					throw new SocialException ("Invalid Twitter credentials.");
+			}, token);
+		}
 	}
 }
 

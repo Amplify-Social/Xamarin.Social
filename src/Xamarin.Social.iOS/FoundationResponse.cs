@@ -48,7 +48,15 @@ namespace Xamarin.Social
 			headers = new Dictionary<string, string> ();
 			var hs = urlResponse.AllHeaderFields;
 			foreach (var k in hs.Keys) {
-				headers[k.ToString ()] = hs.ObjectForKey (k).ToString ();
+				var o = hs.ObjectForKey (k);
+				if (k == null || o == null)
+					continue;
+
+				var key = k.ToString ();
+				if (key == null)
+					continue;
+
+				headers[key] = o.ToString ();
 			}
 		}
 
