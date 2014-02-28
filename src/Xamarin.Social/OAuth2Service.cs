@@ -1,5 +1,5 @@
 //
-//  Copyright 2012-2013, Xamarin Inc.
+//  Copyright 2012, Xamarin Inc.
 //
 //    Licensed under the Apache License, Version 2.0 (the "License");
 //    you may not use this file except in compliance with the License.
@@ -21,36 +21,35 @@ using Xamarin.Auth;
 namespace Xamarin.Social
 {
 	/// <summary>
-	/// Represents an OAuth 2 based service.
+	/// Implements OAuth 2.0 implicit granting. http://tools.ietf.org/html/draft-ietf-oauth-v2-31#section-4.2
 	/// </summary>
-	public abstract class OAuth2Service : Service
+	public abstract class OAuth2Service : Service, ISupportScope
 	{
 		/// <summary>
-		/// Gets or sets the client identifier.
+		/// Client identifier. http://tools.ietf.org/html/rfc6749#section-2.2
 		/// </summary>
-		/// <value>The client identifier.</value>
-		/// <remarks>http://tools.ietf.org/html/rfc6749#section-2.2</remarks>
+		/// <value>
+		/// The client identifier.
+		/// </value>
 		public string ClientId { get; set; }
 
 		/// <summary>
-		/// Gets or sets the client secret.
+		/// Optional client secret. http://tools.ietf.org/html/rfc6749#section-4.1
 		/// </summary>
-		/// <value>The client identifier.</value>
-		/// <remarks>http://tools.ietf.org/html/rfc6749#section-4.1</remarks>
+		/// <value>
+		/// The client identifier.
+		/// </value>
 		public string ClientSecret { get; set; }
 
 		/// <summary>
-		/// Gets or sets the scope of the access token.
+		/// Access token scope. http://tools.ietf.org/html/rfc6749#section-3.3
 		/// </summary>
-		/// <remarks>
-		/// <para>http://tools.ietf.org/html/rfc6749#section-3.3</para>
-		/// <para>
-		/// When creating your own <see cref="OAuth2Service"/>, the available options for scopes
-		/// will be listed in the documentation for the service you're implementing.
-		/// </para>
-		/// </remarks>
 		public string Scope { get; set; }
-		
+
+		public virtual string [] Scopes {
+			set { Scope = string.Join (",", value); }
+		}
+
 		public Uri AuthorizeUrl { get; set; }
 		public Uri RedirectUrl { get; set; }
 		public Uri AccessTokenUrl { get; set; }
@@ -100,7 +99,7 @@ namespace Xamarin.Social
 					getUsernameAsync: GetUsernameAsync);
 			}
 		}
-
+		
 		protected abstract Task<string> GetUsernameAsync (IDictionary<string, string> accountProperties);
 
 		public override Request CreateRequest (string method, Uri url, IDictionary<string, string> parameters, Account account)

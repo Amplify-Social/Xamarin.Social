@@ -1,5 +1,5 @@
 //
-//  Copyright 2012-2013, Xamarin Inc.
+//  Copyright 2012, Xamarin Inc.
 //
 //    Licensed under the Apache License, Version 2.0 (the "License");
 //    you may not use this file except in compliance with the License.
@@ -18,6 +18,12 @@ using System.IO;
 
 namespace Xamarin.Social
 {
+	/// <summary>
+	/// Represents a file.
+	/// </summary>
+	/// <remarks>
+	/// This object disposes of the Data property.
+	/// </remarks>
 	public class FileData : IDisposable
 	{
 		public Stream Data { get; protected set; }
@@ -70,8 +76,8 @@ namespace Xamarin.Social
 			if (request == null) {
 				throw new ArgumentNullException ("request");
 			}
-			if (string.IsNullOrWhiteSpace (name)) {
-				throw new ArgumentException ("Must provide a name for the file in the request.", "name");
+			if (string.IsNullOrEmpty (name)) {
+				throw new ArgumentException ("name", "Must provide a name for the file in the request.");
 			}
 			request.AddMultipartData (name, Data, MimeType, Filename);
 		}
@@ -89,9 +95,6 @@ namespace Xamarin.Social
 
 		protected virtual void Dispose (bool disposing)
 		{
-			if (!disposing)
-				return;
-
 			if (Data != null) {
 				Data.Dispose ();
 				Data = null;

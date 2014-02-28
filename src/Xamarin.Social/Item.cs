@@ -1,5 +1,5 @@
 //
-//  Copyright 2012-2013, Xamarin Inc.
+//  Copyright 2012, Xamarin Inc.
 //
 //    Licensed under the Apache License, Version 2.0 (the "License");
 //    you may not use this file except in compliance with the License.
@@ -19,12 +19,12 @@ using System.Collections.Generic;
 namespace Xamarin.Social
 {
 	/// <summary>
-	/// Represents a social moment such as status update or shared image.
+	/// Facebook Post. Twitter Status. Google+ Activity.
 	/// </summary>
 	public class Item : IDisposable
 	{
 		/// <summary>
-		/// Gets or sets textual content.
+		/// Textual content.
 		/// </summary>
 		public string Text { get; set; }
 
@@ -77,24 +77,15 @@ namespace Xamarin.Social
 		/// </param>
 		protected virtual void Dispose (bool disposing)
 		{
-			if (!disposing)
-				return;
-
-			if (Images != null) {
-				foreach (var i in Images) {
-					i.Dispose();
-				}
-
-				Images.Clear();
+			foreach (var i in Images) {
+				i.Dispose ();
 			}
+			Images.Clear ();
 
-			if (Files != null) {
-				foreach (var f in Files) {
-					f.Dispose();
-				}
-
-				Files.Clear();
+			foreach (var f in Files) {
+				f.Dispose ();
 			}
+			Files.Clear ();
 		}
 
 		/// <summary>
@@ -110,17 +101,17 @@ namespace Xamarin.Social
 		}
 
 		/// <summary>
-		/// Gets or sets links attached to this item.
+		/// Attached link.
 		/// </summary>
 		public IList<Uri> Links { get; set; }
 
 		/// <summary>
-		/// Gets or sets images attached to this item.
+		/// Attached image.
 		/// </summary>
 		public IList<ImageData> Images { get; set; }
 
 		/// <summary>
-		/// Gets or sets files attached to this item.
+		/// Attached image.
 		/// </summary>
 		public IList<FileData> Files { get; set; }
 

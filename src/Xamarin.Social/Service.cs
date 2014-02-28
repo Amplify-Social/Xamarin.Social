@@ -1,5 +1,5 @@
 //
-//  Copyright 2012-2013, Xamarin Inc.
+//  Copyright 2012, Xamarin Inc.
 //
 //    Licensed under the Apache License, Version 2.0 (the "License");
 //    you may not use this file except in compliance with the License.
@@ -26,10 +26,14 @@ using Xamarin.Auth;
 #if PLATFORM_IOS
 using ShareUIType = MonoTouch.UIKit.UIViewController;
 using AuthenticateUIType = MonoTouch.UIKit.UIViewController;
+using MonoTouch.UIKit;
+using MonoTouch.Foundation;
 #elif PLATFORM_ANDROID
+using Android.App;
 using ShareUIType = Android.Content.Intent;
 using AuthenticateUIType = Android.Content.Intent;
 using UIContext = Android.App.Activity;
+using AppContext = Android.Content.Context;
 #else
 using ShareUIType = System.Object;
 using AuthenticateUIType = System.Object;
@@ -38,22 +42,22 @@ using AuthenticateUIType = System.Object;
 namespace Xamarin.Social
 {
 	/// <summary>
-	/// Represents a social networking service.
+	/// Social Networking Service.
 	/// </summary>
 	public abstract class Service
 	{
 		/// <summary>
-		/// Gets the unique identifier for this service type.
+		/// Uniquely identifies this service type.
 		/// </summary>
 		public string ServiceId { get; private set; }
 
 		/// <summary>
-		/// Gets text used to label this service in the UI.
+		/// Text used to label this service in the UI.
 		/// </summary>
 		public string Title { get; private set; }
 
 		/// <summary>
-		/// Gets text used as the title of screen when editing an item.
+		/// Text used as the title of screen when editing an item.
 		/// </summary>
 		public string ShareTitle { get; protected set; }
 
@@ -85,7 +89,7 @@ namespace Xamarin.Social
 		#region Service Information
 
 		/// <summary>
-		/// Gets the URL to a sign up page.
+		/// Link to sign up.
 		/// </summary>
 		public Uri CreateAccountLink { get; protected set; }
 
@@ -120,7 +124,7 @@ namespace Xamarin.Social
 		/// Gets a value indicating whether this <see cref="Xamarin.Social.Service"/> supports authenticating new accounts.
 		/// </summary>
 		/// <value>
-		/// <c>true</c> if the service supports authentication; otherwise, <c>false</c>.
+		/// <c>true</c> if supports authentication; otherwise, <c>false</c>.
 		/// </value>
 		public virtual bool SupportsAuthentication {
 			get {
@@ -134,9 +138,14 @@ namespace Xamarin.Social
 		/// This account will then be saved.
 		/// </summary>
 		/// <returns>
-		/// The authenticator or <c>null</c> if authentication is not supported.
+		/// The authenticator or null if authentication is not supported.
 		/// </returns>
 		protected abstract Authenticator GetAuthenticator ();
+
+		protected virtual WebAuthenticator GetEmbeddedAuthenticator ()
+		{
+			return (WebAuthenticator) GetAuthenticator ();
+		}
 
 #if PLATFORM_ANDROID
 		/// <summary>
@@ -183,7 +192,7 @@ namespace Xamarin.Social
 			}
 			auth.Completed += (sender, e) => {
 				if (e.IsAuthenticated) {
-					AccountStore.Create ().Save (e.Account, ServiceId);
+					SaveAccount (e.Account);
 				}
 				if (completedHandler != null) {
 					completedHandler (e.Account);
@@ -192,18 +201,194 @@ namespace Xamarin.Social
 			auth.Title = Title;
 			return auth.GetUI ();
 		}
+
+		/// <summary>
+		/// Opens the system web browser for the user to sign in to their account.
+		/// </summary>
+		/// <param name="customUrlHandler">
+		/// A handler that will open a URL in system browser, register a custom
+		/// callback URL handler and wait for the app to go foreground.
+		///
+		/// You can use <see cref="SafariUrlHandler.Instace" />, given that you call its
+		/// <c>WillEnterForeground</c> and <c>HandleOpenUrl</c> methods from your <c>AppDelegate</c>.
+		/// </param>
+		/// <returns>
+		/// A task for when authentication has completed.
+		/// </returns>
+		public virtual Task<IEnumerable<Account>> GetAccountsWithBrowserAsync (ICustomUrlHandler customUrlHandler)
+		{
+			if (customUrlHandler == null)
+				throw new ArgumentNullException ("customUrlHandler",
+					"This overload needs a handler to launch system browser and wait for redirect. " +
+					"You can use SafariUrlHandler.Instace, given that you call its " +
+					"WillEnterForeground and HandleOpenUrl methods from your AppDelegate.");
+
+			var tcs = new TaskCompletionSource<IEnumerable<Account>> ();
+
+			var authenticator = GetAuthenticator () as WebAuthenticator;
+			if (authenticator == null)
+				throw new NotSupportedException ("This service does not support authentication via web browser.");
+
+			authenticator.Error += (sender, e) => {
+				tcs.TrySetException (e.Exception ?? new SocialException (e.Message));
+			};
+
+			authenticator.Completed += (sender, e) => {
+				if (e.IsAuthenticated) {
+					SaveAccount (e.Account);
+					tcs.TrySetResult (new [] { e.Account });
+				} else {
+					tcs.TrySetCanceled ();
+				}
+			};
+
+			authenticator.AuthenticateWithBrowser (customUrlHandler);
+			return tcs.Task;
+		}
+
 #endif
+
+#if PLATFORM_IOS
+		/// <summary>
+		/// Presents the necessary UI for the user to sign in to their account.
+		/// </summary>
+		/// <returns>
+		/// A task for when authentication has completed.
+		/// </returns>
+		public virtual Task<IEnumerable<Account>> GetAccountsWithAuthUIAsync (Action<UIViewController, bool, NSAction> presentAuthController)
+		{
+			if (presentAuthController == null)
+				throw new ArgumentNullException ("presentAuthController", "This overload needs a function to present authentication controller.");
+
+			var tcs = new TaskCompletionSource<IEnumerable<Account>> ();
+
+			var authenticator = GetEmbeddedAuthenticator ();
+			if (authenticator == null)
+				throw new NotSupportedException ("This service does not support authentication via a controller.");
+
+			authenticator.Error += (sender, e) => {
+				tcs.TrySetException (e.Exception ?? new SocialException (e.Message));
+			};
+
+			UIViewController authController = null;
+
+			authenticator.Completed += (sender, e) => {
+				if (e.IsAuthenticated) {
+					SaveAccount (e.Account);
+					tcs.TrySetResult (new [] { e.Account });
+				} else {
+					tcs.TrySetCanceled ();
+				}
+
+				authController.DismissViewController (true, () => {});
+			};
+
+			authController = authenticator.GetUI ();
+			authController.ModalPresentationStyle = UIModalPresentationStyle.FormSheet;
+			presentAuthController (authController, true, () => {});
+
+			return tcs.Task;
+		}
+#elif PLATFORM_ANDROID
+		/// <summary>
+		/// Presents the necessary UI for the user to sign in to their account.
+		/// </summary>
+		/// <returns>
+		/// A task for when authentication has completed.
+		/// </returns>
+		public virtual Task<IEnumerable<Account>> GetAccountsWithAuthUIAsync (UIContext context)
+		{
+			var tcs = new TaskCompletionSource<IEnumerable<Account>> ();
+
+			var authenticator = GetEmbeddedAuthenticator ();
+			if (authenticator == null)
+				throw new NotSupportedException ("This service does not support authentication via a controller.");
+
+			authenticator.Error += (sender, e) => {
+				tcs.TrySetException (e.Exception ?? new SocialException (e.Message));
+			};
+
+			authenticator.Completed += (sender, e) => {
+				if (e.IsAuthenticated) {
+					SaveAccount (e.Account, context);
+					tcs.TrySetResult (new [] { e.Account });
+				} else {
+					tcs.TrySetCanceled ();
+				}
+			};
+
+			var authenticatorUi = authenticator.GetUI (context);
+			context.StartActivity (authenticatorUi);
+
+			return tcs.Task;
+		}
+#endif
+
+		/// <summary>
+		/// Gets a value indicating whether this <see cref="Xamarin.Social.Service"/> supports reauthorizing an existing account.
+		/// </summary>
+		/// <value>
+		/// <c>true</c> if supports reauthorization; otherwise, <c>false</c>.
+		/// </value>
+		public virtual bool SupportsReauthorization {
+			get {
+				return false;
+			}
+		}
+
+		/// <summary>
+		/// Attempts to reauthorize an account.
+		/// Service implementors may request a new access token or call appropriate APIs.
+		/// </summary>
+		/// <returns>
+		/// A task that completes with a reauthorized account.
+		/// </returns>
+		public virtual Task<Account> ReauthorizeAsync (Account account)
+		{
+			throw new NotSupportedException ();
+		}
+
+		public virtual Task<IDictionary<string, string>> GetAccessTokenAsync (Account account, CancellationToken token)
+		{
+			var tcs = new TaskCompletionSource<IDictionary<string, string>> ();
+			tcs.SetResult (account.Properties);
+			return tcs.Task;
+		}
+
+		public virtual bool SupportsVerification {
+			get {
+				return false;
+			}
+		}
+
+		public virtual Task VerifyAsync (Account account, CancellationToken token)
+		{
+			throw new NotSupportedException ();
+		}
+
 		#endregion
 
 		#region Account management
 
 		/// <summary>
-		/// Gets a value indicating whether this <see cref="Xamarin.Social.Service"/> supports saving and deleting accounts.
+		/// Gets a value indicating whether this <see cref="Xamarin.Social.Service"/> supports saving accounts.
 		/// </summary>
 		/// <value>
-		/// <c>true</c> if supports saving and deleting accounts; otherwise, <c>false</c>.
+		/// <c>true</c> if supports saving accounts; otherwise, <c>false</c>.
 		/// </value>
 		public virtual bool SupportsSave {
+			get {
+				return true;
+			}
+		}
+
+		/// <summary>
+		/// Gets a value indicating whether this <see cref="Xamarin.Social.Service"/> supports deleting accounts.
+		/// </summary>
+		/// <value>
+		/// <c>true</c> if supports deleting accounts; otherwise, <c>false</c>.
+		/// </value>
+		public virtual bool SupportsDelete {
 			get {
 				return true;
 			}
@@ -213,7 +398,7 @@ namespace Xamarin.Social
 		/// <summary>
 		/// Saves an account and associates it with this service.
 		/// </summary>
-		public virtual void SaveAccount (Android.Content.Context context, Account account)
+		public virtual void SaveAccount (Account account, AppContext context)
 		{
 			AccountStore.Create (context).Save (account, ServiceId);
 		}
@@ -221,7 +406,7 @@ namespace Xamarin.Social
 		/// <summary>
 		/// Deletes a previously saved account associated with this service.
 		/// </summary>
-		public virtual void DeleteAccount (Android.Content.Context context, Account account)
+		public virtual void DeleteAccount (Account account, AppContext context)
 		{
 			AccountStore.Create (context).Delete (account, ServiceId);
 		}
@@ -248,22 +433,22 @@ namespace Xamarin.Social
 		#region Sharing
 
 		/// <summary>
-		/// Gets the maximum number of characters that you can share.
+		/// The maximum number of characters that you can share.
 		/// </summary>
 		public int MaxTextLength { get; protected set; }
 
 		/// <summary>
-		/// Gets the maximum number of links that you can share.
+		/// The maximum number of links that you can share.
 		/// </summary>
 		public int MaxLinks { get; protected set; }
 
 		/// <summary>
-		/// Gets the maximum number of images that you can share.
+		/// The maximum number of images that you can share.
 		/// </summary>
 		public int MaxImages { get; protected set; }
 
 		/// <summary>
-		/// Gest the maximum number of files that you can share.
+		/// The maximum number of files that you can share.
 		/// </summary>
 		public int MaxFiles { get; protected set; }
 #if SUPPORT_VIDEO
@@ -356,7 +541,9 @@ namespace Xamarin.Social
 #endif
 
 		/// <summary>
+		/// <para>
 		/// Shares the passed-in object without presenting any UI to the user.
+		/// </para>
 		/// </summary>
 		/// <param name='item'>
 		/// The item to share.
@@ -370,7 +557,9 @@ namespace Xamarin.Social
 		}
 
 		/// <summary>
+		/// <para>
 		/// Shares the passed-in object without presenting any UI to the user.
+		/// </para>
 		/// </summary>
 		/// <param name='item'>
 		/// The item to share.
@@ -400,58 +589,36 @@ namespace Xamarin.Social
 		#region Low-level access
 
 		/// <summary>
-		/// Creates a base request to access the service.
+		/// Creates a base request to access the service. This is a low-level entrypoint for those
+		/// who need to access resources that are not covered by this class.
 		/// </summary>
-		/// <param name="method">The HTTP method to use with the request.</param>
-		/// <param name="url">The url of the request.</param>
-		/// <remarks>
-		/// <para>This is a low-level entrypoint for those who need to access resources that are not covered by this class.</para>
-		/// <para>The returned request will not be authenticated.</para>
-		/// </remarks>
 		public Request CreateRequest (string method, Uri url)
 		{
 			return CreateRequest (method, url, null, null);
 		}
 
 		/// <summary>
-		/// Creates a base request to access the service.
+		/// Creates a base request to access the service. This is a low-level entrypoint for those
+		/// who need to access resources that are not covered by this class.
 		/// </summary>
-		/// <param name="method">The HTTP method to use with the request.</param>
-		/// <param name="url">The url of the request.</param>
-		/// <param name="account">The account to authenticate this request with.</param>
-		/// <remarks>
-		/// <para>This is a low-level entrypoint for those who need to access resources that are not covered by this class.</para>
-		/// </remarks>
 		public Request CreateRequest (string method, Uri url, Account account)
 		{
 			return CreateRequest (method, url, null, account);
 		}
 
 		/// <summary>
-		/// Creates a base request to access the service.
+		/// Creates a base request to access the service. This is a low-level entrypoint for those
+		/// who need to access resources that are not covered by this class.
 		/// </summary>
-		/// <param name="method">The HTTP method to use with the request.</param>
-		/// <param name="url">The url of the request.</param>
-		/// <param name="parameters">The parameters to populate the request with.</param>
-		/// <remarks>
-		/// <para>This is a low-level entrypoint for those who need to access resources that are not covered by this class.</para>
-		/// <para>The returned request will not be authenticated.</para>
-		/// </remarks>
 		public Request CreateRequest (string method, Uri url, IDictionary<string, string> parameters)
 		{
 			return CreateRequest (method, url, parameters, null);
 		}
 
 		/// <summary>
-		/// Creates a base request to access the service.
+		/// Creates a base request to access the service. This is a low-level entrypoint for those
+		/// who need to access resources that are not covered by this class.
 		/// </summary>
-		/// <param name="method">The HTTP method to use with the request.</param>
-		/// <param name="url">The url of the request.</param>
-		/// <param name="parameters">The parameters to populate the request with.</param>
-		/// <param name="account">The account to authenticate this request with.</param>
-		/// <remarks>
-		/// <para>This is a low-level entrypoint for those who need to access resources that are not covered by this class.</para>
-		/// </remarks>
 		public virtual Request CreateRequest (string method, Uri url, IDictionary<string, string> parameters, Account account)
 		{
 			return new Request (method, url, parameters, account);

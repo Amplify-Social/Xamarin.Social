@@ -90,6 +90,24 @@ namespace Xamarin.Social.Services
 				}
 			});*/
 		}
+
+		
+		public override bool SupportsVerification {
+			get {
+				return true;
+			}
+		}
+
+		public override Task VerifyAsync (Account account, CancellationToken token)
+		{
+			return CreateRequest ("GET",
+				new Uri ("https://api.twitter.com/1.1/account/verify_credentials.json"),
+				account
+			).GetResponseAsync (token).ContinueWith (t => {
+				if (t.Result.StatusCode != HttpStatusCode.OK)
+					throw new SocialException ("Invalid Twitter credentials.");
+			}, token);
+		}
 	}
 }
 
