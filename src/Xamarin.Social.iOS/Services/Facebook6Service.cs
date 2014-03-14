@@ -18,6 +18,7 @@ namespace Xamarin.Social.Services
 			set {
 				Scope = string.Join (",", value);
 			}
+			get { return Scope.Split (','); }
 		}
 
 		protected override AccountStoreOptions AccountStoreOptions {
@@ -59,7 +60,7 @@ namespace Xamarin.Social.Services
 	            account
 			).GetResponseAsync (token).ContinueWith (t => {
 				if (!t.Result.GetResponseText ().Contains ("\"id\""))
-					throw new SocialException ("Unrecognized Facebook response.");
+     					throw new SocialException ("Unrecognized Facebook response.");
 			}, token);
 		}
 	}

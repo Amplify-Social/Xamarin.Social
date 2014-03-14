@@ -23,6 +23,9 @@ namespace Xamarin.Social.Services
 					? string.Join (" ", value)
 					: null;
 			}
+
+			get { return Scope == null ? null : Scope.Split (' ');
+			}
 		}
 
 		protected override Task<string> GetUsernameAsync (IDictionary<string, string> accountProperties)

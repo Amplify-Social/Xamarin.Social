@@ -17,6 +17,7 @@ using System;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using Xamarin.Auth;
+using System.Linq;
 
 namespace Xamarin.Social
 {
@@ -48,6 +49,7 @@ namespace Xamarin.Social
 
 		public virtual string [] Scopes {
 			set { Scope = string.Join (",", value); }
+			get { return Scope.Split (','); }
 		}
 
 		public Uri AuthorizeUrl { get; set; }
