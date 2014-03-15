@@ -276,10 +276,7 @@ namespace Xamarin.Social.Services
 			throw new NotSupportedException ("Twitter5Service does support saving user accounts. You should direct them to the Settings application.");
 		}
 
-		public override void DeleteAccount (Account account)
-		{
-			throw new NotSupportedException ("Twitter5Service does support deleting user accounts. You should direct them to the Settings application.");
-		}
+
 
 		#endregion
 	}
