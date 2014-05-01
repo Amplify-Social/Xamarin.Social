@@ -137,13 +137,15 @@ namespace Xamarin.Social.Services
 
 				UpdateParameters (request);
 
-				request.PerformRequest ((resposeData, urlResponse, err) => {
+				request.PerformRequest ((responseData, urlResponse, err) => {
 					Response result = null;
 					try {
 						if (err != null)
 							throw new SocialException (err.LocalizedDescription);
+						if (urlResponse.StatusCode > 399)
+							throw new SocialException (urlResponse.StatusCode + ": " + responseData.ToString());
 
-						result = new FoundationResponse (resposeData, urlResponse);
+						result = new FoundationResponse (responseData, urlResponse);
 					} catch (Exception ex) {
 						tcs.TrySetException (ex);
 						return;
