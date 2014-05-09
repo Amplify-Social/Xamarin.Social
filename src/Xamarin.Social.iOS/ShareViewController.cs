@@ -37,7 +37,7 @@ namespace Xamarin.Social
 		Task<IEnumerable<Account>> futureAccounts;
 
 		UITextView textEditor;
-		ProgressLabel progress;
+		ProgressLabelSocial progress;
 		TextLengthLabel textLengthLabel;
 		UILabel linksLabel;
 		ChoiceField accountField = null;
@@ -302,7 +302,7 @@ namespace Xamarin.Social
 			NavigationItem.RightBarButtonItem.Enabled = false;
 
 			if (progress == null) {
-				progress = new ProgressLabel (NSBundle.MainBundle.LocalizedString ("Sending...", "Sending... status message when sharing"));
+				progress = new ProgressLabelSocial (NSBundle.MainBundle.LocalizedString ("Sending...", "Sending... status message when sharing"));
 				NavigationItem.TitleView = progress;
 				progress.StartAnimating ();
 			}
