@@ -55,7 +55,7 @@ namespace Xamarin.Social.Services
 						{ "x_reverse_auth_parameters", t.Result.GetResponseText () }
 					};
 
-					return this.CreateRequest ("GET", new Uri ("https://api.twitter.com/oauth/access_token"), parameters, acc)
+					return this.CreateRequest ("POST", new Uri ("https://api.twitter.com/oauth/access_token"), parameters, acc)
 						.GetResponseAsync (token)
 						.ContinueWith (tokenTask => {
 							return WebEx.FormDecode (tokenTask.Result.GetResponseText ());
@@ -69,7 +69,7 @@ namespace Xamarin.Social.Services
 
 			public ReverseAuthRequest (Account account, string consumerKey, string consumerSecret)
 				: base (
-					"GET",
+					"POST",
 					new Uri ("https://api.twitter.com/oauth/request_token"),
 					new Dictionary<string, string> { { "x_auth_mode", "reverse_auth" } },
 					account
